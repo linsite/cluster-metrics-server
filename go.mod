@@ -1,4 +1,4 @@
-module github.com/linsite/k8s-cluster-metrics
+module github.com/linsite/cluster-metrics-server
 
 require (
 	k8s.io/apimachinery v0.29.4

@@ -1,18 +1,16 @@
 package main
 
 import (
-	    "flag"
-	    "os"
+	"flag"
+	"os"
 
-		  "k8s.io/apimachinery/pkg/util/wait"
-		  "k8s.io/component-base/logs"
-			"k8s.io/klog/v2"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/component-base/logs"
+	"k8s.io/klog/v2"
+	basecmd "sigs.k8s.io/custom-metrics-apiserver/pkg/cmd"
+	"sigs.k8s.io/custom-metrics-apiserver/pkg/provider"
 
-			basecmd "sigs.k8s.io/custom-metrics-apiserver/pkg/cmd"
-			"sigs.k8s.io/custom-metrics-apiserver/pkg/provider"
-
-				        // make this the path to the provider that you just wrote
-		yourprov "github.com/linsite/k8s-cluster-metrics/internal/pkg"
+	cluster "github.com/linsite/cluster-metrics-server/internal/pkg"
 )
 
 
@@ -35,7 +33,7 @@ func (a *YourAdapter) makeProviderOrDie() provider.CustomMetricsProvider {
         klog.Fatalf("unable to construct discovery REST mapper: %v", err)
     }
 
-    return yourprov.NewProvider(client, mapper)
+    return cluster.NewProvider(client, mapper)
 }
 
 func main() {
