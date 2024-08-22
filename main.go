@@ -6,15 +6,15 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/component-base/logs"
+  "k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 	basecmd "sigs.k8s.io/custom-metrics-apiserver/pkg/cmd"
-	"sigs.k8s.io/custom-metrics-apiserver/pkg/provider"
 
 	cluster "github.com/linsite/cluster-metrics-server/internal/pkg"
 )
 
 
-type YourAdapter struct {
+type clusterAdapter struct {
     basecmd.AdapterBase
 
     // the message printed on startup
@@ -22,7 +22,7 @@ type YourAdapter struct {
 }
 
 
-func (a *YourAdapter) makeProviderOrDie() provider.CustomMetricsProvider {
+func (a *clusterAdapter) makeProviderOrDie() cluster.CustomMetricsProvider{
     client, err := a.DynamicClient()
     if err != nil {
         klog.Fatalf("unable to construct dynamic client: %v", err)
@@ -33,26 +33,27 @@ func (a *YourAdapter) makeProviderOrDie() provider.CustomMetricsProvider {
         klog.Fatalf("unable to construct discovery REST mapper: %v", err)
     }
 
-    return cluster.NewProvider(client, mapper)
+		cfg, err := a.ClientConfig()
+    if err != nil {
+        klog.Fatalf("unable to get cfg: %v", err)
+    }
+		clientSet := kubernetes.NewForConfigOrDie(cfg)
+    return cluster.NewProvider(client, mapper, clientSet)
 }
 
 func main() {
     logs.InitLogs()
     defer logs.FlushLogs()
 
-    // initialize the flags, with one custom flag for the message
-    cmd := &YourAdapter{}
+    cmd := &clusterAdapter{}
     cmd.Flags().StringVar(&cmd.Message, "msg", "starting adapter...", "startup message")
-    // make sure you get the klog flags
     logs.AddGoFlags(flag.CommandLine)
     cmd.Flags().AddGoFlagSet(flag.CommandLine)
     cmd.Flags().Parse(os.Args)
 
     provider := cmd.makeProviderOrDie()
     cmd.WithCustomMetrics(provider)
-    // you could also set up external metrics support,
-    // if your provider supported it:
-    // cmd.WithExternalMetrics(provider)
+    cmd.WithExternalMetrics(provider)
 
     klog.Infof(cmd.Message)
     if err := cmd.Run(wait.NeverStop); err != nil {
